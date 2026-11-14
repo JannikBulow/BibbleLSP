@@ -54,6 +54,7 @@ namespace bibblec::lsp {
         scope::ScopePtr globalScope;
         std::vector<lexer::Token> tokens;
         std::vector<parser::ASTNodePtr> ast;
+        std::vector<parser::ASTNodePtr> importResolvedAst;
         std::vector<Diagnostic> diagnostics;
         diagnostic::Diagnostics diag;
 
