@@ -1,7 +1,7 @@
 // Copyright 2026 Jannik Laugmand Bülow
 
-#ifndef BIBBLEASM_LSP_SERVER_H
-#define BIBBLEASM_LSP_SERVER_H 1
+#ifndef BIBBLELSP_LSP_SERVER_H
+#define BIBBLELSP_LSP_SERVER_H
 
 #include "lsp/dispatcher.h"
 #include "lsp/document_store.h"
@@ -50,4 +50,4 @@ namespace bibblec::lsp {
     };
 }
 
-#endif // BIBBLEASM_LSP_SERVER_H
+#endif // BIBBLELSP_LSP_SERVER_H

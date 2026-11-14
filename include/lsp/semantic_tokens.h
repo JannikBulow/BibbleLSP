@@ -1,7 +1,7 @@
 // Copyright 2026 Jannik Laugmand Bülow
 
-#ifndef BIBBLEASM_LSP_SEMANTIC_TOKENS_H
-#define BIBBLEASM_LSP_SEMANTIC_TOKENS_H 1
+#ifndef BIBBLELSP_LSP_SEMANTIC_TOKENS_H
+#define BIBBLELSP_LSP_SEMANTIC_TOKENS_H
 
 #include "lsp/json.h"
 
@@ -39,4 +39,4 @@ namespace bibblec::lsp {
     json MakeSemanticTokenLegend();
 }
 
-#endif // BIBBLEASM_LSP_SEMANTIC_TOKENS_H
+#endif // BIBBLELSP_LSP_SEMANTIC_TOKENS_H

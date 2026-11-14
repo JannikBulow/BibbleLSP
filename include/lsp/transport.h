@@ -1,7 +1,7 @@
 // Copyright 2026 Jannik Laugmand Bülow
 
-#ifndef BIBBLEASM_LSP_TRANSPORT_H
-#define BIBBLEASM_LSP_TRANSPORT_H 1
+#ifndef BIBBLELSP_LSP_TRANSPORT_H
+#define BIBBLELSP_LSP_TRANSPORT_H
 
 #include <iostream>
 #include <stdexcept>
@@ -26,4 +26,4 @@ namespace bibblec::lsp {
     };
 }
 
-#endif // BIBBLEASM_LSP_TRANSPORT_H
+#endif // BIBBLELSP_LSP_TRANSPORT_H
