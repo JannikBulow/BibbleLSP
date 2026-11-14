@@ -26,6 +26,10 @@ namespace bibblec::lsp {
             return handleHover(p);
         });
 
+        dispatcher.onRequest("textDocument/definition", [this](const json& p) {
+            return handleDefinition(p);
+        });
+
 
         dispatcher.onNotification("initialized", [this](const json& p) {
             handleInitialized(p);
@@ -78,6 +82,7 @@ namespace bibblec::lsp {
             {"capabilities", {
                 {"textDocumentSync", 1},
                 {"hoverProvider", true},
+                {"definitionProvider", true},
 
                 {"semanticTokensProvider", {
                     {"legend", MakeSemanticTokenLegend()},
@@ -148,6 +153,37 @@ namespace bibblec::lsp {
                     }}
                 };
             }
+        }
+
+        return result;
+    }
+
+    json Server::handleDefinition(const json& params) {
+        std::string uri = params["textDocument"]["uri"].get<std::string>();
+        LspPosition position(params["position"]["line"].get<uint32_t>(), params["position"]["character"].get<uint32_t>());
+
+        auto* document = mDocuments.get(uri);
+        std::optional<DefinitionInfo> definition;
+
+        if (document) {
+            definition = mAnalysis.getDefinition(*document, position);
+        }
+
+        json result;
+        if (definition) {
+            result = {
+                {"uri", definition->uri},
+                {"range", {
+                    {"start", {
+                        {"line", definition->range.start.line},
+                        {"character", definition->range.start.character}
+                    }},
+                    {"end", {
+                        {"line", definition->range.end.line},
+                        {"character", definition->range.end.character}
+                    }}
+                }}
+            };
         }
 
         return result;
