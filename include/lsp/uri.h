@@ -5,6 +5,7 @@
 
 #include <uriparser/Uri.h>
 
+#include <cstring>
 #include <filesystem>
 #include <string>
 
