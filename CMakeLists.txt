@@ -29,6 +29,7 @@ set(SOURCES
     src/dispatcher.cpp
     src/document_store.cpp
     src/main.cpp
+    src/module_index.cpp
     src/semantic_tokens.cpp
     src/server.cpp
     src/transport.cpp
@@ -38,6 +39,7 @@ set(HEADERS
     include/lsp/dispatcher.h
     include/lsp/document_store.h
     include/lsp/json.h
+    include/lsp/module_index.h
     include/lsp/semantic_tokens.h
     include/lsp/server.h
     include/lsp/transport.h
