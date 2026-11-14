@@ -9,12 +9,15 @@
 
 #include <BibbleC/lexer/token.h>
 
+#include <BibbleC/parser/ast/node.h>
+
 #include <BibbleC/scope/scope.h>
 
 #include <cstdint>
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace bibblec::lsp {
@@ -37,8 +40,10 @@ namespace bibblec::lsp {
     struct ParsedDocument {
         std::string uri;
         std::string text;
+        std::string moduleName;
         scope::ScopePtr globalScope;
         std::vector<lexer::Token> tokens;
+        std::vector<parser::ASTNodePtr> ast;
         std::vector<Diagnostic> diagnostics;
     };
 
@@ -50,6 +55,8 @@ namespace bibblec::lsp {
         void close(const std::string& uri);
 
         const ParsedDocument* get(const std::string& uri);
+
+        ParsedDocument* loadFromDisk(const std::filesystem::path& path);
 
     private:
         class ErrorListener : public diagnostic::IListener {
@@ -64,9 +71,9 @@ namespace bibblec::lsp {
         };
 
         std::unordered_map<std::string, ParsedDocument> mDocuments;
+        std::unordered_set<std::string> mOpenDocuments;
 
         ParsedDocument& parse(std::string uri, std::string text);
-        std::string parseModuleName(ParsedDocument& doc, diagnostic::Diagnostics& diag);
     };
 }
 

@@ -1,14 +1,48 @@
 // Copyright 2026 Jannik Laugmand Bülow
 
 #include "lsp/document_store.h"
+#include "lsp/uri.h"
 
 #include <BibbleC/lexer/lexer.h>
 
 #include <BibbleC/parser/parser.h>
 
+#include <fstream>
 #include <regex>
 
 namespace bibblec::lsp {
+    // copied from bibblec-compiler
+    static std::string ExtractModuleName(const std::vector<lexer::Token>& tokens, diagnostic::Diagnostics& diag) {
+        if (tokens[0].getTokenType() == lexer::TokenType::ModuleKeyword) {
+            if (tokens[1].getTokenType() == lexer::TokenType::Identifier) {
+                int pos = 1;
+                std::string moduleName;
+                while (tokens[pos].getTokenType() == lexer::TokenType::Identifier) {
+                    moduleName += tokens[pos++].getText();
+                    if (tokens[pos].getTokenType() == lexer::TokenType::Semicolon) break;
+
+                    if (tokens[pos].getTokenType() == lexer::TokenType::Dot) {
+                        pos++;
+                        moduleName += '.';
+                    }
+                }
+                return moduleName;
+            } else {
+                diag.reportCompilerError(
+                    tokens[1].getStartLocation(),
+                    tokens[1].getEndLocation(),
+                    std::format("expected module name after '{}module{}' keyword", fmt::bold, fmt::reset));
+            }
+        } else {
+            diag.reportCompilerError(
+                    tokens[0].getStartLocation(),
+                    tokens[0].getEndLocation(),
+                    std::format("expected '{}module{}' keyword", fmt::bold, fmt::reset));
+        }
+
+        return "<error>";
+    }
+
     static LspPosition ToLspStartPosition(uint32_t lexerLine, uint32_t lexerColumn) {
         return {lexerLine > 0 ? lexerLine - 1 : 0, lexerColumn > 0 ? lexerColumn - 1 : 0} ;
     }
@@ -22,14 +56,17 @@ namespace bibblec::lsp {
     }
 
     const ParsedDocument& DocumentStore::open(std::string uri, std::string text) {
+        mOpenDocuments.insert(uri);
         return parse(std::move(uri), std::move(text));
     }
 
     const ParsedDocument& DocumentStore::update(std::string uri, std::string newText) {
+        mOpenDocuments.insert(uri);
         return parse(std::move(uri), std::move(newText));
     }
 
     void DocumentStore::close(const std::string& uri) {
+        mOpenDocuments.erase(uri);
         mDocuments.erase(uri);
     }
 
@@ -37,6 +74,23 @@ namespace bibblec::lsp {
         auto it = mDocuments.find(uri);
         if (it == mDocuments.end()) return nullptr;
         return &it->second;
+    }
+
+    ParsedDocument* DocumentStore::loadFromDisk(const std::filesystem::path& path) {
+        const std::string uri = PathToFileUri(path);
+
+        if (mOpenDocuments.contains(uri)) {
+            auto it = mDocuments.find(uri);
+
+            if (it != mDocuments.end()) return &it->second;
+        }
+
+        std::ifstream file(path, std::ios::binary);
+        if (!file) return nullptr;
+
+        std::string text{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+
+        return &parse(uri, std::move(text));
     }
 
     DocumentStore::ErrorListener::ErrorListener(ParsedDocument& doc)
@@ -95,46 +149,13 @@ namespace bibblec::lsp {
             }
         }
 
-        doc.globalScope = std::make_unique<scope::Scope>(parseModuleName(doc, diag));
+        doc.moduleName = ExtractModuleName(doc.tokens, diag);
+        doc.globalScope = std::make_unique<scope::Scope>(doc.moduleName);
 
         std::vector<lexer::Token> tokensCopy = doc.tokens;
         parser::Parser parser(tokensCopy, diag, doc.globalScope.get(), "");
-        parser.parse();
+        doc.ast = parser.parse();
 
         return doc;
-    }
-
-    // copied from bibblec-compiler
-    std::string DocumentStore::parseModuleName(ParsedDocument& doc, diagnostic::Diagnostics& diag) {
-        auto& tokens = doc.tokens;
-
-        if (tokens[0].getTokenType() == lexer::TokenType::ModuleKeyword) {
-            if (tokens[1].getTokenType() == lexer::TokenType::Identifier) {
-                int pos = 1;
-                std::string moduleName;
-                while (tokens[pos].getTokenType() == lexer::TokenType::Identifier) {
-                    moduleName += tokens[pos++].getText();
-                    if (tokens[pos].getTokenType() == lexer::TokenType::Semicolon) break;
-
-                    if (tokens[pos].getTokenType() == lexer::TokenType::Dot) {
-                        pos++;
-                        moduleName += '.';
-                    }
-                }
-                return moduleName;
-            } else {
-                diag.reportCompilerError(
-                    tokens[1].getStartLocation(),
-                    tokens[1].getEndLocation(),
-                    std::format("expected module name after '{}module{}' keyword", fmt::bold, fmt::reset));
-            }
-        } else {
-            diag.reportCompilerError(
-                    tokens[0].getStartLocation(),
-                    tokens[0].getEndLocation(),
-                    std::format("expected '{}module{}' keyword", fmt::bold, fmt::reset));
-        }
-
-        return "<error>";
     }
 }
