@@ -63,12 +63,12 @@ namespace bibblec::lsp {
         diag.addListener(std::make_unique<DocumentStore::ErrorListener>(*this));
     }
 
-    const ParsedDocument& DocumentStore::open(std::string uri, std::string text) {
+    ParsedDocument& DocumentStore::open(std::string uri, std::string text) {
         mOpenDocuments.insert(uri);
         return parse(std::move(uri), std::move(text));
     }
 
-    const ParsedDocument& DocumentStore::update(std::string uri, std::string newText) {
+    ParsedDocument& DocumentStore::update(std::string uri, std::string newText) {
         mOpenDocuments.insert(uri);
         return parse(std::move(uri), std::move(newText));
     }
@@ -78,7 +78,7 @@ namespace bibblec::lsp {
         mDocuments.erase(uri);
     }
 
-    const ParsedDocument* DocumentStore::get(const std::string& uri) {
+    ParsedDocument* DocumentStore::get(const std::string& uri) {
         auto it = mDocuments.find(uri);
         if (it == mDocuments.end()) return nullptr;
         return &it->second;

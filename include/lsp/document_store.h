@@ -64,12 +64,12 @@ namespace bibblec::lsp {
     class DocumentStore {
         friend struct ParsedDocument;
     public:
-        const ParsedDocument& open(std::string uri, std::string text);
-        const ParsedDocument& update(std::string uri, std::string newText);
+        ParsedDocument& open(std::string uri, std::string text);
+        ParsedDocument& update(std::string uri, std::string newText);
 
         void close(const std::string& uri);
 
-        const ParsedDocument* get(const std::string& uri);
+        ParsedDocument* get(const std::string& uri);
 
         ParsedDocument* loadFromDisk(const std::filesystem::path& path);
 
