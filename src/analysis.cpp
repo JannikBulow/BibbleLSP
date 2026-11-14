@@ -3,7 +3,12 @@
 #include "lsp/analysis.h"
 #include "lsp/uri.h"
 
+#include <BibbleC/parser/ast/expression/variable_expression.h>
+
 #include <BibbleC/parser/ast/global/import_statement.h>
+
+#include <format>
+#include <iostream>
 
 namespace bibblec::lsp {
     static std::filesystem::path NormalizePath(const std::filesystem::path& path) {
@@ -26,8 +31,35 @@ namespace bibblec::lsp {
         }
     }
 
+    std::optional<HoverInfo> Analysis::getHover(const ParsedDocument& document, LspPosition position) {
+        auto* node = findNodeAtPosition(document, position);
+
+        if (node) {
+            auto range = TokenRange(node->getSource());
+
+            std::cerr << "Selected node: " << typeid(*node).name()
+                      << " range: ["
+                      << range.start.line << ":" << range.start.character
+                      << " - "
+                      << range.end.line << ":" << range.end.character
+                      << "] cursor: ["
+                      << position.line << ":" << position.character
+                      << "]\n";
+        }
+
+        auto* variable = dynamic_cast<parser::VariableExpression*>(node);
+        if (!variable) return std::nullopt;
+
+        scope::Symbol* symbol = variable->resolveSymbol();
+        if (!symbol || !symbol->type) return std::nullopt;
+
+        return HoverInfo(formatSymbol(*symbol), TokenRange(variable->getSource()));
+    }
+
     void Analysis::handleImports(ParsedDocument& document, DocumentStore& documents, const ModuleIndex& modules) {
         if (document.importResolvedAst) return;
+
+        document.importedNodeCount = 0;
 
         std::vector<std::string> moduleNames{document.moduleName};
 
@@ -67,11 +99,58 @@ namespace bibblec::lsp {
                 for (const auto& node : imported->ast) {
                     if (auto cloned = node->cloneExternal(document.globalScope.get())) {
                         document.ast.insert(document.ast.begin(), std::move(cloned));
+                        document.importedNodeCount++;
                     }
                 }
             }
         }
 
         document.importResolvedAst = true;
+    }
+
+    std::string Analysis::formatSymbol(const scope::Symbol& symbol) {
+        return std::format("{}: {}", symbol.name, symbol.type->getName());
+    }
+
+    const lexer::Token* Analysis::findTokenAt(const ParsedDocument& document, LspPosition position) {
+        for (const auto& token : document.tokens) {
+            auto range = TokenRange(token.getStartLocation(), token.getEndLocation());
+            if (PositionInRange(position, range)) return &token;
+        }
+        return nullptr;
+    }
+
+    parser::ASTNode* Analysis::findNodeAtPosition(const ParsedDocument& document, LspPosition position) {
+        for (size_t i = document.importedNodeCount; i < document.ast.size(); i++) {
+            auto& node = document.ast[i];
+
+            if (auto* result = findNodeAtPosition(node.get(), position)) {
+                return result;
+            }
+        }
+
+        return nullptr;
+    }
+
+    parser::ASTNode* Analysis::findNodeAtPosition(parser::ASTNode* node, LspPosition position) {
+        if (!node) return nullptr;
+
+        parser::ASTNode* bestMatch = nullptr;
+
+        for (auto* child : node->getChildren()) {
+            auto* match = findNodeAtPosition(child, position);
+
+            if (match && (!bestMatch || IsSmallerRange(TokenRange(match->getSource()), TokenRange(bestMatch->getSource())))) {
+                bestMatch = match;
+            }
+        }
+
+        auto range = TokenRange(node->getSource());
+
+        if (PositionInRange(position, range) && (!bestMatch || IsSmallerRange(range, TokenRange(bestMatch->getSource())))) {
+            bestMatch = node;
+        }
+
+        return bestMatch;
     }
 }
