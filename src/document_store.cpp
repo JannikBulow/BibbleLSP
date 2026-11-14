@@ -55,6 +55,14 @@ namespace bibblec::lsp {
         return {ToLspStartPosition(start.line, start.col), ToLspEndPosition(end.line, end.col)};
     }
 
+    NullBuffer nullBuffer;
+    std::ostream nullStream(&nullBuffer);
+
+    ParsedDocument::ParsedDocument()
+        : diag(nullStream, nullStream) {
+        diag.addListener(std::make_unique<DocumentStore::ErrorListener>(*this));
+    }
+
     const ParsedDocument& DocumentStore::open(std::string uri, std::string text) {
         mOpenDocuments.insert(uri);
         return parse(std::move(uri), std::move(text));
@@ -114,13 +122,6 @@ namespace bibblec::lsp {
         });
     }
 
-    class NullBuffer : public std::streambuf {
-    protected:
-        int overflow(int c) override {
-            return traits_type::not_eof(c);
-        }
-    };
-
     ParsedDocument& DocumentStore::parse(std::string uri, std::string text) {
         ParsedDocument& doc = mDocuments[uri];
         doc.uri = std::move(uri);
@@ -129,12 +130,7 @@ namespace bibblec::lsp {
         doc.tokens.clear();
         doc.diagnostics.clear();
 
-        NullBuffer nullBuffer;
-        std::ostream nullStream(&nullBuffer);
-
-        diagnostic::Diagnostics diag(nullStream, nullStream);
-        diag.addListener(std::make_unique<ErrorListener>(doc));
-        diag.addText(doc.uri, doc.text);
+        doc.diag.addText(doc.uri, doc.text);
 
         lexer::Lexer lexer(doc.text, doc.uri);
         doc.tokens = lexer.lex();
@@ -149,11 +145,11 @@ namespace bibblec::lsp {
             }
         }
 
-        doc.moduleName = ExtractModuleName(doc.tokens, diag);
+        doc.moduleName = ExtractModuleName(doc.tokens, doc.diag);
         doc.globalScope = std::make_unique<scope::Scope>(doc.moduleName);
 
         std::vector<lexer::Token> tokensCopy = doc.tokens;
-        parser::Parser parser(tokensCopy, diag, doc.globalScope.get(), "");
+        parser::Parser parser(tokensCopy, doc.diag, doc.globalScope.get(), "");
         doc.ast = parser.parse();
 
         return doc;

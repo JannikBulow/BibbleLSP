@@ -37,6 +37,16 @@ namespace bibblec::lsp {
         std::string message;
     };
 
+    class NullBuffer : public std::streambuf {
+    protected:
+        int overflow(int c) override {
+            return traits_type::not_eof(c);
+        }
+    };
+
+    extern NullBuffer nullBuffer;
+    extern std::ostream nullStream;
+
     struct ParsedDocument {
         std::string uri;
         std::string text;
@@ -45,9 +55,13 @@ namespace bibblec::lsp {
         std::vector<lexer::Token> tokens;
         std::vector<parser::ASTNodePtr> ast;
         std::vector<Diagnostic> diagnostics;
+        diagnostic::Diagnostics diag;
+
+        ParsedDocument();
     };
 
     class DocumentStore {
+        friend struct ParsedDocument;
     public:
         const ParsedDocument& open(std::string uri, std::string text);
         const ParsedDocument& update(std::string uri, std::string newText);
