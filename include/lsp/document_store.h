@@ -55,6 +55,7 @@ namespace bibblec::lsp {
         std::vector<lexer::Token> tokens;
         std::vector<parser::ASTNodePtr> ast;
         bool importResolvedAst;
+        size_t importedNodeCount;
         std::vector<Diagnostic> diagnostics;
         diagnostic::Diagnostics diag;
 
@@ -90,6 +91,13 @@ namespace bibblec::lsp {
 
         ParsedDocument& parse(std::string uri, std::string text);
     };
+
+    LspPosition ToLspStartPosition(uint32_t lexerLine, uint32_t lexerColumn);
+    LspPosition ToLspEndPosition(uint32_t lexerLine, uint32_t lexerColumn);
+    LspRange TokenRange(const lexer::SourceLocation& start, const lexer::SourceLocation& end);
+    LspRange TokenRange(const SourcePair& source);
+    bool PositionInRange(LspPosition position, LspRange range);
+    bool IsSmallerRange(LspRange a, LspRange b);
 }
 
 #endif // BIBBLELSP_LSP_DOCUMENT_STORE_H
