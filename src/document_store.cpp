@@ -151,6 +151,7 @@ namespace bibblec::lsp {
         std::vector<lexer::Token> tokensCopy = doc.tokens;
         parser::Parser parser(tokensCopy, doc.diag, doc.globalScope.get(), "");
         doc.ast = parser.parse();
+        doc.importResolvedAst = false;
 
         return doc;
     }
