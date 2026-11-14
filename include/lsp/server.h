@@ -44,6 +44,7 @@ namespace bibblec::lsp {
         json handleInitialize(const json& params);
         json handleSemanticTokensFull(const json& params);
         json handleShutdown(const json& params);
+        json handleHover(const json& params);
 
         void handleInitialized(const json& params);
         void handleDidOpen(const json& params);

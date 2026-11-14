@@ -17,9 +17,15 @@ namespace bibblec::lsp {
             if (mState != ServerState::Running) return std::nullopt;
             return handleSemanticTokensFull(p);
         });
+
         dispatcher.onRequest("shutdown", [this](const json& p) -> std::optional<json> {
             return handleShutdown(p);
         });
+
+        dispatcher.onRequest("textDocument/hover", [this](const json& p) {
+            return handleHover(p);
+        });
+
 
         dispatcher.onNotification("initialized", [this](const json& p) {
             handleInitialized(p);
@@ -71,6 +77,7 @@ namespace bibblec::lsp {
             }},
             {"capabilities", {
                 {"textDocumentSync", 1},
+                {"hoverProvider", true},
 
                 {"semanticTokensProvider", {
                     {"legend", MakeSemanticTokenLegend()},
@@ -97,6 +104,43 @@ namespace bibblec::lsp {
         mState = ServerState::ShuttingDown;
         mExitCode = 0;
         return nullptr;
+    }
+
+    json Server::handleHover(const json& params) {
+        std::string uri = params["textDocument"]["uri"].get<std::string>();
+        LspPosition position(params["position"]["line"].get<uint32_t>(), params["position"]["character"].get<uint32_t>());
+
+        auto* document = mDocuments.get(uri);
+        std::optional<HoverInfo> hover;
+
+        if (document) {
+            hover = mAnalysis.getHover(*document, position);
+        }
+
+        json result;
+        if (hover) {
+            result = {
+                {"contents", {
+                    {"kind", "markdown"},
+                    {"value", hover->contents}
+                }}
+            };
+
+            if (hover->range) {
+                result["range"] = {
+                    {"start", {
+                        {"line", hover->range->start.line},
+                        {"character", hover->range->start.character}
+                    }},
+                    {"end", {
+                        {"line", hover->range->end.line},
+                        {"character", hover->range->end.character}
+                    }}
+                };
+            }
+        }
+
+        return result;
     }
 
     void Server::handleInitialized(const json& params) {
