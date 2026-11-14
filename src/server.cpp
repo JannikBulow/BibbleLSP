@@ -73,7 +73,7 @@ namespace bibblec::lsp {
     json Server::handleSemanticTokensFull(const json& params) {
         std::string uri = params["textDocument"]["uri"].get<std::string>();
 
-        const ParsedDocument* doc = mStore.get(uri);
+        const ParsedDocument* doc = mDocuments.get(uri);
         if (!doc) {
             return MakeSemanticTokensResponse({});
         }
@@ -96,7 +96,7 @@ namespace bibblec::lsp {
         std::string uri = params["textDocument"]["uri"].get<std::string>();
         std::string text = params["textDocument"]["text"].get<std::string>();
 
-        const ParsedDocument& doc = mStore.open(std::move(uri), std::move(text));
+        const ParsedDocument& doc = mDocuments.open(std::move(uri), std::move(text));
         publishDiagnostics(doc);
     }
 
@@ -107,13 +107,13 @@ namespace bibblec::lsp {
         if (changes.empty()) return;
 
         std::string newText = changes[0]["text"].get<std::string>();
-        const ParsedDocument& doc = mStore.update(std::move(uri), std::move(newText));
+        const ParsedDocument& doc = mDocuments.update(std::move(uri), std::move(newText));
         publishDiagnostics(doc);
     }
 
     void Server::handleDidClose(const json& params) {
         std::string uri = params["textDocument"]["uri"].get<std::string>();
-        mStore.close(uri);
+        mDocuments.close(uri);
 
         mSend(Dispatcher::MakeNotification("textDocument/publishDiagnostics", {
             {"uri", std::move(uri)},

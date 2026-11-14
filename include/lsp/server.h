@@ -32,6 +32,7 @@ namespace bibblec::lsp {
     private:
         std::function<void(const std::string&)> mSend;
         DocumentStore mStore;
+        DocumentStore mDocuments;
         ServerState mState = ServerState::Uninitialized;
         bool mExit = false;
         int mExitCode = 1;

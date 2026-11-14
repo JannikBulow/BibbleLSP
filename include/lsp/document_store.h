@@ -1,9 +1,9 @@
 // Copyright 2026 Jannik Laugmand Bülow
 
-#ifndef BIBBLEASM_LSP_DOCUMENT_STORE_H
-#define BIBBLEASM_LSP_DOCUMENT_STORE_H 1
 #ifndef BIBBLELSP_LSP_DOCUMENT_STORE_H
 #define BIBBLELSP_LSP_DOCUMENT_STORE_H
+
+#include "lsp/module_index.h"
 
 #include <BibbleC/diagnostic/diagnostics.h>
 
