@@ -43,12 +43,12 @@ namespace bibblec::lsp {
         return "<error>";
     }
 
-    LspPosition ToLspStartPosition(uint32_t lexerLine, uint32_t lexerColumn) {
-        return {lexerLine > 0 ? lexerLine - 1 : 0, lexerColumn > 0 ? lexerColumn - 1 : 0};
+    LspPosition ToLspStartPosition(uint32_t line, uint32_t col) {
+        return {line - 1, col - 1};
     }
 
-    LspPosition ToLspEndPosition(uint32_t lexerLine, uint32_t lexerColumn) {
-        return {lexerLine > 0 ? lexerLine - 1 : 0,lexerColumn > 0 ? lexerColumn - 1 : 0};
+    LspPosition ToLspEndPosition(uint32_t line, uint32_t col) {
+        return {line - 1, col - 1};
     }
 
     LspRange TokenRange(const lexer::SourceLocation& start, const lexer::SourceLocation& end) {
