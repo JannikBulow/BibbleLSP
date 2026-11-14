@@ -2,6 +2,7 @@
 
 #include "lsp/semantic_tokens.h"
 #include "lsp/server.h"
+#include "lsp/uri.h"
 
 namespace bibblec::lsp {
     Server::Server(std::function<void(const std::string&)> send)
@@ -52,6 +53,16 @@ namespace bibblec::lsp {
 
     json Server::handleInitialize(const json& params) {
         mState = ServerState::Initializing;
+
+        if (params.contains("workspaceFolders") && !params["workspaceFolders"].is_null()) {
+            for (const auto& folder : params["workspaceFolders"]) {
+                std::string uri = folder["uri"];
+                mWorkspaceRoots.push_back(UriToPath(uri));
+            }
+        } else if (params.contains("rootUri") && !params["rootUri"].is_null()) {
+            std::string uri = params["rootUri"];
+            mWorkspaceRoots.push_back(UriToPath(uri));
+        }
 
         return {
             {"serverInfo", {
