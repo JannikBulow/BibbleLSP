@@ -30,6 +30,10 @@ namespace bibblec::lsp {
             return handleDefinition(p);
         });
 
+        dispatcher.onRequest("textDocument/completion", [this](const json& p) {
+            return handleCompletion(p);
+        });
+
 
         dispatcher.onNotification("initialized", [this](const json& p) {
             handleInitialized(p);
@@ -83,6 +87,10 @@ namespace bibblec::lsp {
                 {"textDocumentSync", 1},
                 {"hoverProvider", true},
                 {"definitionProvider", true},
+                {"completionProvider", {
+                    {"resolveProvider", false},
+                    {"triggerCharacters", {"::"}}
+                }},
 
                 {"semanticTokensProvider", {
                     {"legend", MakeSemanticTokenLegend()},
@@ -187,6 +195,13 @@ namespace bibblec::lsp {
         }
 
         return result;
+    }
+
+    json Server::handleCompletion(const json& params) {
+        std::string uri = params["textDocument"]["uri"].get<std::string>();
+        LspPosition position(params["position"]["line"].get<uint32_t>(), params["position"]["character"].get<uint32_t>());
+
+        return nullptr; //TODO: implement this soon
     }
 
     void Server::handleInitialized(const json& params) {
