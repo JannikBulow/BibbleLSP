@@ -3,6 +3,7 @@
 #ifndef BIBBLELSP_LSP_SERVER_H
 #define BIBBLELSP_LSP_SERVER_H
 
+#include "lsp/analysis.h"
 #include "lsp/dispatcher.h"
 #include "lsp/document_store.h"
 #include "lsp/json.h"
@@ -35,6 +36,7 @@ namespace bibblec::lsp {
         std::vector<std::filesystem::path> mWorkspaceRoots;
         ModuleIndex mModuleIndex;
         DocumentStore mDocuments;
+        Analysis mAnalysis;
         ServerState mState = ServerState::Uninitialized;
         bool mExit = false;
         int mExitCode = 1;

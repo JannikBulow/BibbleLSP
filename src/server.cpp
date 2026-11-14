@@ -111,7 +111,12 @@ namespace bibblec::lsp {
         std::string uri = params["textDocument"]["uri"].get<std::string>();
         std::string text = params["textDocument"]["text"].get<std::string>();
 
-        const ParsedDocument& doc = mDocuments.open(std::move(uri), std::move(text));
+        ParsedDocument& doc = mDocuments.open(std::move(uri), std::move(text));
+
+        mModuleIndex.indexFile(UriToPath(doc.uri), mDocuments);
+
+        mAnalysis.analyze(doc, mDocuments, mModuleIndex);
+
         publishDiagnostics(doc);
     }
 
@@ -121,8 +126,14 @@ namespace bibblec::lsp {
         const json& changes = params["contentChanges"];
         if (changes.empty()) return;
 
-        std::string newText = changes[0]["text"].get<std::string>();
-        const ParsedDocument& doc = mDocuments.update(std::move(uri), std::move(newText));
+        std::string newText = changes.back()["text"].get<std::string>();
+
+        ParsedDocument& doc = mDocuments.update(std::move(uri), std::move(newText));
+
+        mModuleIndex.indexFile(UriToPath(doc.uri), mDocuments);
+
+        mAnalysis.analyze(doc, mDocuments, mModuleIndex);
+
         publishDiagnostics(doc);
     }
 
