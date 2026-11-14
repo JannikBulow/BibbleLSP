@@ -18,11 +18,17 @@ namespace bibblec::lsp {
         std::optional<LspRange> range;
     };
 
+    struct DefinitionInfo {
+        std::string uri;
+        LspRange range;
+    };
+
     class Analysis {
     public:
         void analyze(ParsedDocument& document, DocumentStore& documents, const ModuleIndex& modules);
 
         std::optional<HoverInfo> getHover(const ParsedDocument& document, LspPosition position);
+        std::optional<DefinitionInfo> getDefinition(const ParsedDocument& document, LspPosition position);
 
     private:
         void handleImports(ParsedDocument& document, DocumentStore& documents, const ModuleIndex& modules);

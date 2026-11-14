@@ -44,6 +44,18 @@ namespace bibblec::lsp {
         return HoverInfo(symbol->type->isFunctionType() ? "function" : "variable", formatSymbol(*symbol), "", TokenRange(variable->getSource()));
     }
 
+    std::optional<DefinitionInfo> Analysis::getDefinition(const ParsedDocument& document, LspPosition position) {
+        auto* node = findNodeAtPosition(document, position);
+
+        auto* variable = dynamic_cast<parser::VariableExpression*>(node);
+        if (!variable) return std::nullopt;
+
+        scope::Symbol* symbol = variable->resolveSymbol();
+        if (!symbol || !symbol->type) return std::nullopt;
+
+        return DefinitionInfo(PathToFileUri(symbol->declarationSource.start.file), TokenRange(symbol->declarationSource));
+    }
+
     void Analysis::handleImports(ParsedDocument& document, DocumentStore& documents, const ModuleIndex& modules) {
         if (document.importResolvedAst) return;
 
