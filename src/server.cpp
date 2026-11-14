@@ -121,8 +121,18 @@ namespace bibblec::lsp {
         if (hover) {
             result = {
                 {"contents", {
-                    {"kind", "markdown"},
-                    {"value", hover->contents}
+                    {
+                        {"kind", "markdown"},
+                        {"value", hover->title}
+                    },
+                    {
+                        {"language", "bibble"},
+                        {"value", hover->code}
+                    },
+                    {
+                        {"kind", "markdown"},
+                        {"value", hover->description}
+                    }
                 }}
             };
 

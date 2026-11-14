@@ -7,8 +7,9 @@
 
 #include <BibbleC/parser/ast/global/import_statement.h>
 
+#include <BibbleC/type/function_type.h>
+
 #include <format>
-#include <iostream>
 
 namespace bibblec::lsp {
     static std::filesystem::path NormalizePath(const std::filesystem::path& path) {
@@ -34,26 +35,13 @@ namespace bibblec::lsp {
     std::optional<HoverInfo> Analysis::getHover(const ParsedDocument& document, LspPosition position) {
         auto* node = findNodeAtPosition(document, position);
 
-        if (node) {
-            auto range = TokenRange(node->getSource());
-
-            std::cerr << "Selected node: " << typeid(*node).name()
-                      << " range: ["
-                      << range.start.line << ":" << range.start.character
-                      << " - "
-                      << range.end.line << ":" << range.end.character
-                      << "] cursor: ["
-                      << position.line << ":" << position.character
-                      << "]\n";
-        }
-
         auto* variable = dynamic_cast<parser::VariableExpression*>(node);
         if (!variable) return std::nullopt;
 
         scope::Symbol* symbol = variable->resolveSymbol();
         if (!symbol || !symbol->type) return std::nullopt;
 
-        return HoverInfo(formatSymbol(*symbol), TokenRange(variable->getSource()));
+        return HoverInfo(symbol->type->isFunctionType() ? "function" : "variable", formatSymbol(*symbol), "", TokenRange(variable->getSource()));
     }
 
     void Analysis::handleImports(ParsedDocument& document, DocumentStore& documents, const ModuleIndex& modules) {
@@ -109,7 +97,29 @@ namespace bibblec::lsp {
     }
 
     std::string Analysis::formatSymbol(const scope::Symbol& symbol) {
-        return std::format("{}: {}", symbol.name, symbol.type->getName());
+        std::string name;
+        if (!symbol.module.empty()) name = std::format("{}::{}", symbol.module, symbol.name);
+        else name = symbol.name;
+
+        if (symbol.type->isFunctionType()) {
+            auto* functionType = static_cast<FunctionType*>(symbol.type);
+            std::string result = std::format("{} {}(", functionType->getReturnType()->getName(), name);
+
+            if (!functionType->getArgumentTypes().empty()) {
+                for (auto it = functionType->getArgumentTypes().begin(); it != functionType->getArgumentTypes().end() - 1; ++it) {
+                    Type* argument = *it;
+                    result += argument->getName();
+                    result += ", ";
+                }
+                result += functionType->getArgumentTypes().back()->getName();
+            }
+
+            result += ')';
+
+            return result;
+        }
+
+        return std::format("{} {}", symbol.type->getName(), name);
     }
 
     const lexer::Token* Analysis::findTokenAt(const ParsedDocument& document, LspPosition position) {

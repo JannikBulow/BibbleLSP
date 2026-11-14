@@ -12,7 +12,9 @@
 
 namespace bibblec::lsp {
     struct HoverInfo {
-        std::string contents;
+        std::string title;
+        std::string code;
+        std::string description;
         std::optional<LspRange> range;
     };
 
