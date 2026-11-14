@@ -23,6 +23,21 @@ namespace bibblec::lsp {
         LspRange range;
     };
 
+    enum class CompletionKind {
+        Variable,
+        Function,
+        Type,
+        Module,
+        Keyword
+    };
+
+    struct CompletionCandidate {
+        std::string label;
+        CompletionKind kind;
+        std::string detail;
+        std::string insertText;
+    };
+
     class Analysis {
     public:
         void analyze(ParsedDocument& document, DocumentStore& documents, const ModuleIndex& modules);
