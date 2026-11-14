@@ -26,6 +26,7 @@ FetchContent_MakeAvailable(BibbleC)
 
 
 set(SOURCES
+    src/analysis.cpp
     src/dispatcher.cpp
     src/document_store.cpp
     src/main.cpp
@@ -36,6 +37,7 @@ set(SOURCES
 )
 
 set(HEADERS
+    include/lsp/analysis.h
     include/lsp/dispatcher.h
     include/lsp/document_store.h
     include/lsp/json.h
