@@ -100,6 +100,10 @@ namespace bibblec::lsp {
     }
 
     void Server::handleInitialized(const json& params) {
+        for (const auto& root : mWorkspaceRoots) {
+            mModuleIndex.indexDirectory(root, mDocuments);
+        }
+
         mState = ServerState::Running;
     }
 

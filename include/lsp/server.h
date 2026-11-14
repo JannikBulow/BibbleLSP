@@ -6,6 +6,7 @@
 #include "lsp/dispatcher.h"
 #include "lsp/document_store.h"
 #include "lsp/json.h"
+#include "lsp/module_index.h"
 
 #include <functional>
 #include <string>
@@ -31,8 +32,8 @@ namespace bibblec::lsp {
 
     private:
         std::function<void(const std::string&)> mSend;
-        DocumentStore mStore;
         std::vector<std::filesystem::path> mWorkspaceRoots;
+        ModuleIndex mModuleIndex;
         DocumentStore mDocuments;
         ServerState mState = ServerState::Uninitialized;
         bool mExit = false;
