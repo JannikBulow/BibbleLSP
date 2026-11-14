@@ -127,7 +127,7 @@ namespace bibblec::lsp {
 
             uint32_t line = start.line - 1;
             uint32_t column = start.col - 1;
-            uint32_t length = end.col - start.col + 1;
+            uint32_t length = end.col - start.col;
 
             emit(line, column, length, semanticType.value());
         }
