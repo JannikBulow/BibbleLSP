@@ -60,6 +60,8 @@ namespace bibblec::lsp {
         mutable diagnostic::Diagnostics diag;
 
         ParsedDocument();
+
+        std::string_view getLine(uint32_t line) const;
     };
 
     class DocumentStore {

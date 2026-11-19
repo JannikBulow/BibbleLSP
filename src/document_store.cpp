@@ -85,6 +85,29 @@ namespace bibblec::lsp {
         diag.addListener(std::make_unique<DocumentStore::ErrorListener>(*this));
     }
 
+    std::string_view ParsedDocument::getLine(uint32_t line) const {
+        size_t start = 0;
+
+        for (uint32_t i = 0; i < line; ++i) {
+            start = text.find('\n', start);
+
+            if (start == std::string::npos)
+                return {};
+
+            ++start;
+        }
+
+        size_t end = text.find('\n', start);
+
+        if (end == std::string::npos)
+            end = text.size();
+
+        if (end > start && text[end - 1] == '\r')
+            --end;
+
+        return std::string_view(text).substr(start, end - start);
+    }
+
     ParsedDocument& DocumentStore::open(std::string uri, std::string text) {
         mOpenDocuments.insert(uri);
         return parse(std::move(uri), std::move(text));
