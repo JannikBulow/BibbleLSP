@@ -50,9 +50,10 @@ namespace bibblec::lsp {
 
         std::string formatSymbol(const scope::Symbol& symbol);
 
-        const lexer::Token* findTokenAt(const ParsedDocument& document, LspPosition position);
         parser::ASTNode* findNodeAtPosition(const ParsedDocument& document, LspPosition position);
         parser::ASTNode* findNodeAtPosition(parser::ASTNode* node, LspPosition position);
+
+        scope::Symbol* resolveSymbolAtPosition(const ParsedDocument& document, LspPosition position);
     };
 }
 

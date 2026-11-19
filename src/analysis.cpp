@@ -3,6 +3,7 @@
 #include "lsp/analysis.h"
 #include "lsp/uri.h"
 
+#include <BibbleC/parser/ast/expression/call_expression.h>
 #include <BibbleC/parser/ast/expression/variable_expression.h>
 
 #include <BibbleC/parser/ast/global/import_statement.h>
@@ -33,25 +34,15 @@ namespace bibblec::lsp {
     }
 
     std::optional<HoverInfo> Analysis::getHover(const ParsedDocument& document, LspPosition position) {
-        auto* node = findNodeAtPosition(document, position);
+        scope::Symbol* symbol = resolveSymbolAtPosition(document, position);
+        if (!symbol) return std::nullopt;
 
-        auto* variable = dynamic_cast<parser::VariableExpression*>(node);
-        if (!variable) return std::nullopt;
-
-        scope::Symbol* symbol = variable->resolveSymbol();
-        if (!symbol || !symbol->type) return std::nullopt;
-
-        return HoverInfo(symbol->type->isFunctionType() ? "function" : "variable", formatSymbol(*symbol), "", TokenRange(variable->getSource()));
+        return HoverInfo(symbol->type->isFunctionType() ? "function" : "variable", formatSymbol(*symbol), "", TokenRange(symbol->declarationSource));
     }
 
     std::optional<DefinitionInfo> Analysis::getDefinition(const ParsedDocument& document, LspPosition position) {
-        auto* node = findNodeAtPosition(document, position);
-
-        auto* variable = dynamic_cast<parser::VariableExpression*>(node);
-        if (!variable) return std::nullopt;
-
-        scope::Symbol* symbol = variable->resolveSymbol();
-        if (!symbol || !symbol->type) return std::nullopt;
+        scope::Symbol* symbol = resolveSymbolAtPosition(document, position);
+        if (!symbol) return std::nullopt;
 
         return DefinitionInfo(PathToFileUri(symbol->declarationSource.start.file), TokenRange(symbol->declarationSource));
     }
@@ -134,14 +125,6 @@ namespace bibblec::lsp {
         return std::format("{} {}", symbol.type->getName(), name);
     }
 
-    const lexer::Token* Analysis::findTokenAt(const ParsedDocument& document, LspPosition position) {
-        for (const auto& token : document.tokens) {
-            auto range = TokenRange(token.getStartLocation(), token.getEndLocation());
-            if (PositionInRange(position, range)) return &token;
-        }
-        return nullptr;
-    }
-
     parser::ASTNode* Analysis::findNodeAtPosition(const ParsedDocument& document, LspPosition position) {
         for (size_t i = document.importedNodeCount; i < document.ast.size(); i++) {
             auto& node = document.ast[i];
@@ -162,7 +145,16 @@ namespace bibblec::lsp {
         for (auto* child : node->getChildren()) {
             auto* match = findNodeAtPosition(child, position);
 
-            if (match && (!bestMatch || IsSmallerRange(TokenRange(match->getSource()), TokenRange(bestMatch->getSource())))) {
+            if (!match) continue;
+
+            if (auto* call = dynamic_cast<parser::CallExpression*>(node)) {
+                if (call->getCallee() == match) {
+                    bestMatch = node;
+                    continue;
+                }
+            }
+
+            if (!bestMatch || IsSmallerRange(TokenRange(match->getSource()), TokenRange(bestMatch->getSource()))) {
                 bestMatch = match;
             }
         }
@@ -174,5 +166,20 @@ namespace bibblec::lsp {
         }
 
         return bestMatch;
+    }
+
+    scope::Symbol* Analysis::resolveSymbolAtPosition(const ParsedDocument& document, LspPosition position) {
+        auto* node = findNodeAtPosition(document, position);
+
+        scope::Symbol* symbol = nullptr;
+        if (auto* variable = dynamic_cast<parser::VariableExpression*>(node)) {
+            symbol = variable->resolveSymbol();
+        } else if (auto* call = dynamic_cast<parser::CallExpression*>(node)) {
+            symbol = call->getBestViableFunction(document.diag);
+        }
+
+        if (!symbol || !symbol->type) return nullptr;
+
+        return symbol;
     }
 }
