@@ -57,7 +57,7 @@ namespace bibblec::lsp {
         bool importResolvedAst;
         size_t importedNodeCount;
         std::vector<Diagnostic> diagnostics;
-        diagnostic::Diagnostics diag;
+        mutable diagnostic::Diagnostics diag;
 
         ParsedDocument();
     };
