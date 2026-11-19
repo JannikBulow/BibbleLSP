@@ -89,7 +89,7 @@ namespace bibblec::lsp {
                 {"definitionProvider", true},
                 {"completionProvider", {
                     {"resolveProvider", false},
-                    {"triggerCharacters", {"::"}}
+                    {"triggerCharacters", mAnalysis.getTriggerChars()}
                 }},
 
                 {"semanticTokensProvider", {
@@ -201,7 +201,28 @@ namespace bibblec::lsp {
         std::string uri = params["textDocument"]["uri"].get<std::string>();
         LspPosition position(params["position"]["line"].get<uint32_t>(), params["position"]["character"].get<uint32_t>());
 
-        return nullptr; //TODO: implement this soon
+        uint32_t triggerKind = 1;
+        std::optional<std::string> triggerCharacter = std::nullopt;
+
+        if (params.contains("context")) {
+            const auto& context = params["context"];
+
+            if (context.contains("triggerKind"))
+                triggerKind = context["triggerKind"].get<uint32_t>();
+
+            if (context.contains("triggerCharacter"))
+                triggerCharacter = context["triggerCharacter"].get<std::string>();
+        }
+
+        auto* document = mDocuments.get(uri);
+        std::optional<CompletionResult> completion = std::nullopt;
+
+        if (document) {
+            completion = mAnalysis.complete(*document, position, triggerKind, std::move(triggerCharacter));
+        }
+
+        if (completion) return completion->serialize();
+        return nullptr;
     }
 
     void Server::handleInitialized(const json& params) {
