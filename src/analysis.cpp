@@ -211,7 +211,7 @@ namespace bibblec::lsp {
 
             CompletionItem item;
             item.label = symbol->name;
-            item.kind = CompletionItemKind::Variable;
+            item.kind = symbol->type->isFunctionType() ? CompletionItemKind::Function : CompletionItemKind::Variable;
 
             result.items.push_back(std::move(item));
         }
