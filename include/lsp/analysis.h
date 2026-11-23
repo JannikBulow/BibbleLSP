@@ -75,10 +75,6 @@ namespace bibblec::lsp {
         CompletionResult complete(const ParsedDocument& document, LspPosition position, uint32_t triggerKind, std::optional<std::string> triggerChar);
 
     private:
-        struct WordAtPosition {
-            std::string_view text;
-            LspRange range;
-        };
 
         struct CompleteContext {
             const ParsedDocument& document;
@@ -86,7 +82,7 @@ namespace bibblec::lsp {
             uint32_t triggerKind;
             std::optional<std::string> triggerChar;
 
-            WordAtPosition word;
+            size_t tokenIndex;
         };
 
         void handleImports(ParsedDocument& document, DocumentStore& documents, const ModuleIndex& modules);
@@ -96,7 +92,7 @@ namespace bibblec::lsp {
 
         std::string formatSymbol(const scope::Symbol& symbol);
 
-        WordAtPosition getWordAtPosition(const ParsedDocument& document, LspPosition position);
+        std::optional<size_t> getTokenIndexAtPosition(const ParsedDocument& document, LspPosition position);
 
         parser::ASTNode* findNodeAtPosition(const ParsedDocument& document, LspPosition position);
         parser::ASTNode* findNodeAtPosition(parser::ASTNode* node, LspPosition position);

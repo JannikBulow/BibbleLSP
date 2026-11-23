@@ -81,7 +81,11 @@ namespace bibblec::lsp {
 
     CompletionResult Analysis::complete(const ParsedDocument& document, LspPosition position, uint32_t triggerKind, std::optional<std::string> triggerChar) {
         CompletionResult result;
-        CompleteContext ctx{document, position, triggerKind, std::move(triggerChar), getWordAtPosition(document, position)};
+
+        std::optional<size_t> tokenIndex = getTokenIndexAtPosition(document, position);
+        if (!tokenIndex.has_value()) return  result;
+
+        CompleteContext ctx{document, position, triggerKind, std::move(triggerChar), tokenIndex.value()};
 
         completeKeywords(result, ctx);
         completeSymbols(result, ctx);
@@ -181,9 +185,13 @@ namespace bibblec::lsp {
             Keyword{"handle", "handle "}
         };
 
+        const auto& token = ctx.document.tokens[ctx.tokenIndex];
+        if (token.getTokenType() != lexer::TokenType::Identifier) return;
+
+        std::string_view word = token.getText();
+
         for (const auto keyword : keywords) {
-            if (!keyword.name.starts_with(ctx.word.text))
-                continue;
+            if (!keyword.name.starts_with(word)) continue;
 
             CompletionItem item;
             item.label = std::string(keyword.name);
@@ -204,14 +212,44 @@ namespace bibblec::lsp {
 
         auto* scope = node->getScope();
 
+        const auto& tokens = ctx.document.tokens;
+        size_t tokenIndex = ctx.tokenIndex;
+
+        const auto& token = tokens[tokenIndex];
+
+        std::string_view module = scope->getModuleName();
+        std::string_view word = token.getTokenType() == lexer::TokenType::Identifier ? token.getText() : "";
+
+        if (tokenIndex >= 2 && tokens[tokenIndex - 1].getTokenType() == lexer::TokenType::DoubleColon && tokens[tokenIndex - 2].getTokenType() == lexer::TokenType::Identifier) {
+            std::string_view alias = tokens[tokenIndex - 2].getText();
+            const std::string* fullModule = scope->findModule(std::string(alias));
+            if (fullModule) module = *fullModule;
+        }
+
         for (scope::Symbol* symbol : scope->getVisibleSymbols()) {
-            if (!symbol->module.empty() && symbol->module != scope->getModuleName()) continue;
-            if (!symbol->name.starts_with(ctx.word.text))
-                continue;
+            if (!symbol->module.empty() && symbol->module != module) continue;
+            if (!symbol->name.starts_with(word)) continue;
 
             CompletionItem item;
             item.label = symbol->name;
             item.kind = symbol->type->isFunctionType() ? CompletionItemKind::Function : CompletionItemKind::Variable;
+
+            if (item.kind == CompletionItemKind::Function) {
+                item.insertText = symbol->name + "($0)";
+                item.insertTextFormat = InsertTextFormat::Snippet;
+            }
+
+            result.items.push_back(std::move(item));
+        }
+
+        for (auto& alias : scope->getVisibleModuleAliases()) {
+            if (!alias.starts_with(word)) continue;
+
+            CompletionItem item;
+            item.label = alias;
+            item.kind = CompletionItemKind::Module;
+            item.insertText = alias + "::";
+            item.insertTextFormat = InsertTextFormat::Snippet;
 
             result.items.push_back(std::move(item));
         }
@@ -243,31 +281,32 @@ namespace bibblec::lsp {
         return std::format("{} {}", symbol.type->getName(), name);
     }
 
-    Analysis::WordAtPosition Analysis::getWordAtPosition(const ParsedDocument& document, LspPosition position) {
-        std::string_view line = document.getLine(position.line);
+    std::optional<size_t> Analysis::getTokenIndexAtPosition(const ParsedDocument& document, LspPosition position) {
+        for (size_t i = 0; i < document.tokens.size(); i++) {
+            auto range = TokenRange(
+                document.tokens[i].getStartLocation(),
+                document.tokens[i].getEndLocation()
+            );
 
-        size_t start = position.character;
-        size_t end = position.character;
-
-        auto isIdentifierChar = [](char c) {
-            return std::isalnum(static_cast<unsigned char>(c)) || c == '_';
-        };
-
-        while (start > 0 && isIdentifierChar(line[start - 1])) {
-            --start;
+            if (PositionInRange(position, range))
+                return i;
         }
 
-        while (end < line.size() && isIdentifierChar(line[end])) {
-            ++end;
-        }
+        // temporary solution
+        for (size_t i = 0; i < document.tokens.size(); i++) {
+            auto range = TokenRange(document.tokens[i].getStartLocation(), document.tokens[i].getEndLocation());
 
-        return WordAtPosition{
-            .text = std::string_view(line).substr(start, end - start),
-            .range = {
-                .start = {position.line, static_cast<uint32_t>(start)},
-                .end = {position.line, static_cast<uint32_t>(end)}
+            if (position.line == range.end.line &&
+                position.character == range.end.character &&
+                range.start.line != range.end.line ||
+                (position.line == range.end.line &&
+                position.character == range.end.character &&
+                range.start.character != range.end.character)) {
+                return i;
             }
-        };
+        }
+
+        return std::nullopt;
     }
 
     parser::ASTNode* Analysis::findNodeAtPosition(const ParsedDocument& document, LspPosition position) {
