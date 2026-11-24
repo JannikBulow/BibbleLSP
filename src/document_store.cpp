@@ -193,8 +193,7 @@ namespace bibblec::lsp {
         doc.moduleName = ExtractModuleName(doc.tokens, doc.diag);
         doc.globalScope = std::make_unique<scope::Scope>(doc.moduleName);
 
-        std::vector<lexer::Token> tokensCopy = doc.tokens;
-        parser::Parser parser(tokensCopy, doc.diag, doc.globalScope.get(), "");
+        parser::Parser parser(doc.tokens, doc.diag, doc.globalScope.get(), "");
         doc.ast = parser.parse();
         doc.importResolvedAst = false;
 
