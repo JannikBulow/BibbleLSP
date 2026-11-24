@@ -3,6 +3,7 @@
 #ifndef BIBBLELSP_LSP_DOCUMENT_STORE_H
 #define BIBBLELSP_LSP_DOCUMENT_STORE_H
 
+#include "lsp/json.h"
 #include "lsp/module_index.h"
 
 #include <BibbleC/diagnostic/diagnostics.h>
@@ -21,14 +22,20 @@
 #include <vector>
 
 namespace bibblec::lsp {
+    using json = nlohmann::json;
+
     struct LspPosition {
         uint32_t line; // 0 indexed
         uint32_t character; // 0 indexed utf16 code unit offset, though we don't use utf16 in basm so it actually refers to an ascii character index
+
+        json serialize() const;
     };
 
     struct LspRange {
         LspPosition start;
         LspPosition end;
+
+        json serialize() const;
     };
 
     struct Diagnostic {

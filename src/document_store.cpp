@@ -43,42 +43,18 @@ namespace bibblec::lsp {
         return "<error>";
     }
 
-    LspPosition ToLspStartPosition(uint32_t line, uint32_t col) {
-        return {line - 1, col - 1};
+    json LspPosition::serialize() const {
+        return {
+            {"line", line},
+            {"character", character}
+        };
     }
 
-    LspPosition ToLspEndPosition(uint32_t line, uint32_t col) {
-        return {line - 1, col - 1};
-    }
-
-    LspRange TokenRange(const lexer::SourceLocation& start, const lexer::SourceLocation& end) {
-        return {ToLspStartPosition(start.line, start.col), ToLspEndPosition(end.line, end.col)};
-    }
-
-    LspRange TokenRange(const SourcePair& source) {
-        return TokenRange(source.start, source.end);
-    }
-
-    bool PositionInRange(LspPosition position, LspRange range) {
-        const auto& start = range.start;
-        const auto& end = range.end;
-
-        if (position.line < start.line || position.line > end.line) return false;
-        if (position.line == start.line &&  position.character < start.character) return false;
-        if (position.line == end.line && position.character >= end.character) return false;
-
-        return true;
-    }
-
-    bool IsPositionBeforeOrEqual(LspPosition lhs, LspPosition rhs) {
-        return lhs.line < rhs.line || (lhs.line == rhs.line && lhs.character <= rhs.character);
-    }
-
-    bool IsSmallerRange(LspRange a, LspRange b) {
-        if (a.start.line != b.start.line) return a.start.line > b.start.line;
-        if (a.start.character != b.start.character) return a.start.character > b.start.character;
-        if (a.end.line != b.end.line) return a.end.line < b.end.line;
-        return a.end.character < b.end.character;
+    json LspRange::serialize() const {
+        return {
+            {"start", start.serialize()},
+            {"end", end.serialize()}
+        };
     }
 
     NullBuffer nullBuffer;
@@ -202,5 +178,43 @@ namespace bibblec::lsp {
         doc.importResolvedAst = false;
 
         return doc;
+    }
+
+    LspPosition ToLspStartPosition(uint32_t line, uint32_t col) {
+        return {line - 1, col - 1};
+    }
+
+    LspPosition ToLspEndPosition(uint32_t line, uint32_t col) {
+        return {line - 1, col - 1};
+    }
+
+    LspRange TokenRange(const lexer::SourceLocation& start, const lexer::SourceLocation& end) {
+        return {ToLspStartPosition(start.line, start.col), ToLspEndPosition(end.line, end.col)};
+    }
+
+    LspRange TokenRange(const SourcePair& source) {
+        return TokenRange(source.start, source.end);
+    }
+
+    bool PositionInRange(LspPosition position, LspRange range) {
+        const auto& start = range.start;
+        const auto& end = range.end;
+
+        if (position.line < start.line || position.line > end.line) return false;
+        if (position.line == start.line &&  position.character < start.character) return false;
+        if (position.line == end.line && position.character >= end.character) return false;
+
+        return true;
+    }
+
+    bool IsPositionBeforeOrEqual(LspPosition lhs, LspPosition rhs) {
+        return lhs.line < rhs.line || (lhs.line == rhs.line && lhs.character <= rhs.character);
+    }
+
+    bool IsSmallerRange(LspRange a, LspRange b) {
+        if (a.start.line != b.start.line) return a.start.line > b.start.line;
+        if (a.start.character != b.start.character) return a.start.character > b.start.character;
+        if (a.end.line != b.end.line) return a.end.line < b.end.line;
+        return a.end.character < b.end.character;
     }
 }
