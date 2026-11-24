@@ -35,6 +35,11 @@ namespace bibblec::lsp {
             case lexer::TokenType::CharacterLiteral:
                 return SemanticTokenType::String;
 
+            // Comments
+            case lexer::TokenType::LineComment:
+            case lexer::TokenType::BlockComment:
+                return SemanticTokenType::Comment;
+
             // Operators
             case lexer::TokenType::BangEqual:
             case lexer::TokenType::Percent:
@@ -65,6 +70,7 @@ namespace bibblec::lsp {
             case lexer::TokenType::PipeEqual:
             case lexer::TokenType::DoublePipe:
             case lexer::TokenType::Tilde:
+            case lexer::TokenType::Asperand:
                 return SemanticTokenType::Operator;
 
             // Identifiers require semantic analysis
