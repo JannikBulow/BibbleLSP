@@ -99,6 +99,7 @@ namespace bibblec::lsp {
     LspRange TokenRange(const lexer::SourceLocation& start, const lexer::SourceLocation& end);
     LspRange TokenRange(const SourcePair& source);
     bool PositionInRange(LspPosition position, LspRange range);
+    bool IsPositionBeforeOrEqual(LspPosition lhs, LspPosition rhs);
     bool IsSmallerRange(LspRange a, LspRange b);
 }
 

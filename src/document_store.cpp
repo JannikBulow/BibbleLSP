@@ -70,6 +70,10 @@ namespace bibblec::lsp {
         return true;
     }
 
+    bool IsPositionBeforeOrEqual(LspPosition lhs, LspPosition rhs) {
+        return lhs.line < rhs.line || (lhs.line == rhs.line && lhs.character <= rhs.character);
+    }
+
     bool IsSmallerRange(LspRange a, LspRange b) {
         if (a.start.line != b.start.line) return a.start.line > b.start.line;
         if (a.start.character != b.start.character) return a.start.character > b.start.character;
